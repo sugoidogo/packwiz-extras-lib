@@ -123,12 +123,17 @@ if (args["cf-url"]) {
         const metadata = read_metadata_file(entry.file)
         if (metadata.download.url || !metadata.update.curseforge) continue
         console.log(`caching url for ${metadata.name}`)
-        const json = await fetch(`https://api.curseforge.com/v1/mods/${metadata.update.curseforge['project-id']}/files/${metadata.update.curseforge['file-id']}/download-url`, {
+        const response = await fetch(`https://api.curseforge.com/v1/mods/${metadata.update.curseforge['project-id']}/files/${metadata.update.curseforge['file-id']}/download-url`, {
             'headers': {
                 'accept': 'application/json',
                 'x-api-key': cfKey
             }
-        }).then(get_response)
+        })
+        if (response.status === 403) {
+            console.error('third party downloads not allowed for ' + metadata.name)
+            continue
+        }
+        const json = await get_response(response)
         const url = json.data
         delete metadata.download.mode
         metadata.download.url = url
