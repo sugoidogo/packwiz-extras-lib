@@ -14,5 +14,9 @@
       "read":true,
       "write":true
     }
+  },
+  "tasks": {
+    "compile": "deno run --allow-run=deno compile.ts",
+    "test": "deno run --allow-all test.ts"
   }
 }
