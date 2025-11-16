@@ -11,8 +11,8 @@
   "permissions": {
     "default": {
       "net": [
-        "https://api.modrinth.com",
-        "https://api.curseforge.com"
+        "api.modrinth.com",
+        "api.curseforge.com"
       ],
       "run": [
         "packwiz"
