@@ -104,6 +104,7 @@ if (args["cf-detect"]) {
     }).then(get_response)
     for (const match of matches.data.exactMatches) {
         const path = fingerprints.get(match.file.fileFingerprint)
+        if (!path) continue
         Deno.removeSync(path)
         const status = await new Deno.Command('packwiz', {
             args: ['curseforge', 'add',
