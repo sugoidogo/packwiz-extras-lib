@@ -1,6 +1,7 @@
 import murmurHash from './murmur2.js'
 import * as TOML from '@std/toml'
 import * as Path from '@std/path'
+import * as dotenv from '@std/dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
@@ -33,10 +34,11 @@ type metaData = {
     }
 }
 
+dotenv.loadSync({ export: true })
 const args = parseArgs(Deno.args, {
     string: ['index', 'cf-api-key'],
     boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge'],
-    default: { 'index': 'index.toml' }
+    default: { 'index': 'index.toml', 'cf-api-key': Deno.env.get('CF_API_KEY') }
 })
 
 if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"])) {
@@ -55,7 +57,7 @@ function get_response(response: Response) {
 function get_key() {
     const cfKey = args["cf-api-key"]
     if (!cfKey) {
-        console.error('--cf-api-key required')
+        console.error('--cf-api-key or CF_API_KEY required')
         Deno.exit(1)
     }
     return cfKey
