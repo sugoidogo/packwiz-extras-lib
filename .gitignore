@@ -3,3 +3,4 @@ test
 *.zip
 packwiz-util*
 dist
+.env
