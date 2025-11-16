@@ -1,4 +1,4 @@
-import curseforge from '@meza/curseforge-fingerprint'
+import murmurHash from './murmur2.js'
 import * as TOML from '@std/toml'
 import * as Path from '@std/path'
 import { parseArgs } from '@std/cli'
@@ -81,9 +81,14 @@ if (args["cf-detect"]) {
     console.log('cf-detect')
     const cfKey = get_key()
     const fingerprints = new Map()
-    for (const entry of await get_index()) {
+    const nullHash = murmurHash(new Uint8Array(), 1, true)
+    const index = await get_index()
+    console.log('hashing files, this may take a while...')
+    for (const entry of index) {
         if (entry.metafile) continue
-        try { fingerprints.set(curseforge.fingerprint(entry.file), entry.file) } catch { }
+        const hash = murmurHash(Deno.readFileSync(entry.file), 1, true)
+        if (hash === nullHash) continue
+        fingerprints.set(hash, entry.file)
     }
     console.log(`checking ${fingerprints.size} files`)
     const matches = await fetch('https://api.curseforge.com/v1/fingerprints', {

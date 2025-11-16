@@ -1,6 +1,5 @@
 {
   "imports": {
-    "@meza/curseforge-fingerprint": "npm:@meza/curseforge-fingerprint@^1.1.42",
     "@std/assert": "jsr:@std/assert@1",
     "@std/cli": "jsr:@std/cli@^1.0.23",
     "@std/crypto": "jsr:@std/crypto@^1.0.5",
@@ -8,7 +7,6 @@
     "@std/path": "jsr:@std/path@^1.1.2",
     "@std/toml": "jsr:@std/toml@^1.0.11"
   },
-  "nodeModulesDir":"auto",
   "permissions": {
     "default":{
       "net":["api.modrinth.com","api.curseforge.com"],
