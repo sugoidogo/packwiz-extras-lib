@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
   "permissions": {
     "default": {
       "net": [
@@ -12,5 +13,6 @@
       "write": true,
       "env": true
     }
-  }
+  },
+  "nodeModulesDir":"none"
 }
