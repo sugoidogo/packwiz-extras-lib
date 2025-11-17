@@ -1,4 +1,4 @@
-import murmurHash from './murmur2.js'
+import murmurHash from 'murmur2'
 import * as TOML from '@std/toml'
 import * as Path from '@std/path'
 import * as dotenv from '@std/dotenv'
