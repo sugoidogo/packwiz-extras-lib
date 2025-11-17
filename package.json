@@ -5,7 +5,6 @@
   "main": "main.ts",
   "devDependencies": {
     "@std/fs": "npm:@jsr/std__fs@^1.0.19",
-    "@types/deno": "^2.5.0",
     "@types/node": "^24.10.1",
     "jsr": "^0.13.5"
   },

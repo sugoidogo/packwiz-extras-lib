@@ -5,6 +5,8 @@ import * as dotenv from '@std/dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
+import { spawnSync } from 'node:child_process'
+import fs from 'node:fs'
 
 type indexEntry = {
     file: string,
@@ -35,21 +37,21 @@ type metaData = {
 }
 
 dotenv.loadSync({ export: true })
-const args = parseArgs(Deno.args, {
+const args = parseArgs(process.argv, {
     string: ['index', 'cf-api-key'],
     boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge'],
-    default: { 'index': 'index.toml', 'cf-api-key': Deno.env.get('CF_API_KEY') }
+    default: { 'index': 'index.toml', 'cf-api-key': process.env['CF_API_KEY'] }
 })
 
 if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"])) {
     console.log("usage: packwiz-util [--index=index.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge]")
-    Deno.exit()
+    process.exit()
 }
 
 function get_response(response: Response) {
     if (!response.ok) {
         console.error(response.statusText)
-        Deno.exit(1)
+        process.exit(1)
     }
     return response.json()
 }
@@ -58,25 +60,26 @@ function get_key() {
     const cfKey = args["cf-api-key"]
     if (!cfKey) {
         console.error('--cf-api-key or CF_API_KEY required')
-        Deno.exit(1)
+        process.exit(1)
     }
     return cfKey
 }
 
 async function get_index() {
-    const status = await new Deno.Command('packwiz', { args: ['refresh'] }).spawn().status
-    if (!status.success) {
-        Deno.exit(status.code)
+    const status = spawnSync('packwiz', ['refresh'], { stdio: 'inherit' }).status
+    //const status = await new Deno.Command('packwiz', { args: ['refresh'] }).spawn().status
+    if (status !== 0) {
+        process.exit(status)
     }
-    return TOML.parse(Deno.readTextFileSync('index.toml')).files as indexEntry[]
+    return TOML.parse(fs.readFileSync('index.toml', 'utf-8')).files as indexEntry[]
 }
 
 function read_metadata_file(path: string) {
-    return TOML.parse(Deno.readTextFileSync(path)) as metaData
+    return TOML.parse(fs.readFileSync(path, 'utf-8')) as metaData
 }
 
 function write_metadata_file(path: string, metadata: metaData) {
-    return Deno.writeTextFileSync(path, TOML.stringify(metadata))
+    return fs.writeFileSync(path, TOML.stringify(metadata), { encoding: 'utf-8' })
 }
 
 if (args["cf-detect"]) {
@@ -88,7 +91,7 @@ if (args["cf-detect"]) {
     console.log('hashing files, this may take a while...')
     for (const entry of index) {
         if (entry.metafile) continue
-        const hash = murmurHash(Deno.readFileSync(entry.file), 1, true)
+        const hash = murmurHash(fs.readFileSync(entry.file), 1, true)
         if (hash === nullHash) continue
         fingerprints.set(hash, entry.file)
     }
@@ -105,15 +108,16 @@ if (args["cf-detect"]) {
     for (const match of matches.data.exactMatches) {
         const path = fingerprints.get(match.file.fileFingerprint)
         if (!path) continue
-        Deno.removeSync(path)
-        const status = await new Deno.Command('packwiz', {
-            args: ['curseforge', 'add',
+        fs.unlinkSync(path)
+        const status = spawnSync('packwiz',
+            ['curseforge', 'add',
                 '--addon-id', match.file.modId,
                 '--file-id', match.file.id,
-                '--meta-folder', Path.dirname(path)]
-        }).spawn().status
-        if (!status.success) {
-            Deno.exit(status.code)
+                '--meta-folder', Path.dirname(path)],
+            { stdio: 'inherit' }
+        ).status
+        if (status !== 0) {
+            process.exit(status)
         }
     }
 }
@@ -149,8 +153,8 @@ if (args["mr-detect"]) {
     const hashes = new Map()
     for (const entry of await get_index()) {
         if (!entry.metafile) {
-            const file = Deno.openSync(entry.file, { read: true }).readable
-            const hash = encodeHex(await crypto.subtle.digest('SHA-1', file))
+            const file = fs.readFileSync(entry.file)
+            const hash = encodeHex(crypto.subtle.digestSync('SHA-1', file))
             hashes.set(hash, entry.file)
             continue
         }
@@ -172,15 +176,13 @@ if (args["mr-detect"]) {
     }).then(get_response)
     for (const hash of hashes.keys()) {
         if (hash in versions) {
-            Deno.removeSync(hashes.get(hash))
-            const packwiz_process = new Deno.Command('packwiz', {
-                args: ['modrinth', 'add', versions[hash].files[0].url],
-                stdin: 'piped'
-            }).spawn()
-            packwiz_process.stdin.getWriter().write(new TextEncoder().encode('n\n'))
-            const status = await packwiz_process.status
-            if (!status.success) {
-                Deno.exit(status.code)
+            fs.unlinkSync(hashes.get(hash))
+            const status = spawnSync('packwiz',
+                ['modrinth', 'add', versions[hash].files[0].url],
+                { stdio: 'inherit', input: 'n\n' }
+            ).status
+            if (status !== 0) {
+                process.exit(status)
             }
             hashes.delete(hash)
         }

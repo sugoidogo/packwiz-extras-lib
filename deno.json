@@ -10,9 +10,7 @@
       ],
       "read": true,
       "write": true,
-      "env": [
-        "CF_API_KEY"
-      ]
+      "env": true
     }
   }
 }
