@@ -1,0 +1,36 @@
+{
+  "name": "packwiz-ts",
+  "version": "1.0.0",
+  "description": "This is a small helper program to implement some missing features from packwiz",
+  "main": "main.ts",
+  "devDependencies": {
+    "@types/deno": "^2.5.0",
+    "@types/node": "^24.10.1",
+    "jsr": "^0.13.5"
+  },
+  "scripts": {
+    "test": "deno test --allow-all",
+    "compile": "deno run --allow-run=deno compile.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sugoidogo/packwiz-util.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/sugoidogo/packwiz-util/issues"
+  },
+  "homepage": "https://github.com/sugoidogo/packwiz-util#readme",
+  "dependencies": {
+    "@std/cli": "npm:@jsr/std__cli@^1.0.23",
+    "@std/crypto": "npm:@jsr/std__crypto@^1.0.5",
+    "@std/dotenv": "npm:@jsr/std__dotenv@^0.225.5",
+    "@std/encoding": "npm:@jsr/std__encoding@^1.0.10",
+    "@std/path": "npm:@jsr/std__path@^1.1.2",
+    "@std/toml": "npm:@jsr/std__toml@^1.0.11",
+    "deno": "^2.5.6"
+  }
+}
