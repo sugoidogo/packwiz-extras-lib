@@ -1,7 +1,7 @@
 import murmurHash from 'murmur2'
 import * as TOML from '@std/toml'
 import * as Path from '@std/path'
-import * as dotenv from '@std/dotenv'
+import dotenv from 'dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
@@ -36,7 +36,7 @@ type metaData = {
     }
 }
 
-dotenv.loadSync({ export: true })
+dotenv.config
 const args = parseArgs(process.argv, {
     string: ['index', 'cf-api-key'],
     boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge'],
