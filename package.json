@@ -9,8 +9,8 @@
     "jsr": "^0.13.5"
   },
   "scripts": {
-    "test": "deno test --allow-all",
-    "compile": "deno run --allow-run=deno compile.ts"
+    "test": "node test.ts",
+    "compile": "node compile.ts"
   },
   "repository": {
     "type": "git",
