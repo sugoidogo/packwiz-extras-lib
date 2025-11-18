@@ -152,16 +152,10 @@ if (args["mr-detect"]) {
     console.debug('mr-detect')
     const hashes = new Map()
     for (const entry of await get_index()) {
-        if (!entry.metafile) {
-            const file = fs.readFileSync(entry.file)
-            const hash = encodeHex(crypto.subtle.digestSync('SHA-1', file))
-            hashes.set(hash, entry.file)
-            continue
-        }
-        const file = read_metadata_file(entry.file)
-        if (file.download.mode) {
-            hashes.set(file.download.hash, entry.file)
-        }
+        if (entry.metafile) continue
+        const file = fs.readFileSync(entry.file)
+        const hash = encodeHex(crypto.subtle.digestSync('SHA-1', file))
+        hashes.set(hash, entry.file)
     }
     console.log('checking ' + hashes.size + ' files')
     const versions = await fetch('https://api.modrinth.com/v2/version_files', {
