@@ -6,7 +6,8 @@ import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
 import { spawnSync } from 'node:child_process'
-import fs, { Utf8Stream } from 'node:fs'
+import { Utf8Stream } from 'node:fs'
+import fs from 'node:fs/promises'
 
 type indexEntry = {
     file: string,
@@ -66,35 +67,48 @@ function get_key() {
 }
 
 async function get_index() {
+    return fs.readFile(args.index, 'utf-8').then(function (data) {
+        return TOML.parse(data).files as indexEntry[]
+    })
+}
+
+function refresh_index() {
     const status = spawnSync('packwiz', ['refresh'], { stdio: 'inherit' }).status
-    //const status = await new Deno.Command('packwiz', { args: ['refresh'] }).spawn().status
     if (status !== 0) {
         process.exit(status)
     }
-    return TOML.parse(fs.readFileSync('index.toml', 'utf-8')).files as indexEntry[]
 }
 
-function read_metadata_file(path: string) {
-    return TOML.parse(fs.readFileSync(path, 'utf-8')) as metaData
+async function read_metadata_file(path: string) {
+    return fs.readFile(path, 'utf-8').then(function (data) {
+        return TOML.parse(data) as metaData
+    })
+    //return TOML.parse(fs.readFileSync(path, 'utf-8')) as metaData
 }
 
-function write_metadata_file(path: string, metadata: metaData) {
-    return fs.writeFileSync(path, TOML.stringify(metadata), { encoding: 'utf-8' })
+async function write_metadata_file(path: string, metadata: metaData) {
+    return fs.writeFile(path,TOML.stringify(metadata),'utf-8')
+}
+
+let jobs: Promise<void>[] = []
+
+async function allJobs() {
+    return Promise.all(jobs).then(function () {jobs=[]})
 }
 
 if (args["cf-detect"]) {
     console.log('cf-detect')
     const cfKey = get_key()
     const fingerprints = new Map()
-    const nullHash = murmurHash(new Uint8Array(), 1, true)
-    const index = await get_index()
     console.log('hashing files, this may take a while...')
-    for (const entry of index) {
+    for (const entry of await get_index()) {
         if (entry.metafile) continue
-        const hash = murmurHash(fs.readFileSync(entry.file), 1, true)
-        if (hash === nullHash) continue
-        fingerprints.set(hash, entry.file)
+        jobs.push(fs.readFile(entry.file).then(function (data) {
+            if (data.length === 0) return
+            fingerprints.set(murmurHash(data,1,true),entry.file)
+        }))
     }
+    await allJobs()
     console.log(`checking ${fingerprints.size} files`)
     const matches = await fetch('https://api.curseforge.com/v1/fingerprints', {
         'method': 'POST',
@@ -108,57 +122,73 @@ if (args["cf-detect"]) {
     for (const match of matches.data.exactMatches) {
         const path = fingerprints.get(match.file.fileFingerprint)
         if (!path) continue
-        fs.unlinkSync(path)
-        const status = spawnSync('packwiz',
-            ['curseforge', 'add',
-                '--addon-id', match.file.modId,
-                '--file-id', match.file.id,
-                '--meta-folder', Path.dirname(path)],
-            { stdio: 'inherit' }
-        ).status
-        if (status !== 0) {
-            process.exit(status)
-        }
+        jobs.push(fs.unlink(path).then(function () {
+            const status = spawnSync('packwiz',
+                ['curseforge', 'add',
+                    '--addon-id', match.file.modId,
+                    '--file-id', match.file.id,
+                    '--meta-folder', Path.dirname(path)],
+                { stdio: 'inherit' }
+            ).status
+            if (status !== 0) {
+                process.exit(status)
+            }
+        }))
     }
+    await allJobs()
+    refresh_index()
 }
 
 if (args["cf-url"]) {
     console.log(`cf-url`)
     const cfKey = get_key()
+    const cfFiles = new Map()
+    console.log('gathering curseforge files...')
     for (const entry of await get_index()) {
         if (!entry.metafile) continue
-        const metadata = read_metadata_file(entry.file)
-        if (metadata.download.url || !metadata.update.curseforge) continue
-        console.log(`caching url for ${metadata.name}`)
-        const response = await fetch(`https://api.curseforge.com/v1/mods/${metadata.update.curseforge['project-id']}/files/${metadata.update.curseforge['file-id']}/download-url`, {
-            'headers': {
-                'accept': 'application/json',
-                'x-api-key': cfKey
-            }
-        })
-        if (response.status === 403) {
-            console.error('third party downloads not allowed for ' + metadata.name)
+        jobs.push(read_metadata_file(entry.file).then(function (metadata) {
+            if (metadata.download.url || !metadata.update.curseforge) return
+            cfFiles.set(metadata.update.curseforge['file-id'],{metadata,path:entry.file})
+        }))
+    }
+    await allJobs()
+    const fileIds=Array.from(cfFiles.keys())
+    console.log('requesting file info for ' + fileIds.length + ' files')
+    const files = await fetch('https://api.curseforge.com/v1/mods/files', {
+        'method': 'POST',
+        'headers': {
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'x-api-key':cfKey
+        },
+        body:JSON.stringify({fileIds})
+    }).then(get_response)
+    for (const file of files.data) {
+        if (!file.downloadUrl) {
+            console.error('third party downloads not allowed for ' + file.displayName)
             continue
         }
-        const json = await get_response(response)
-        const url = json.data
+        const { path, metadata } = cfFiles.get(file.id)
         delete metadata.download.mode
-        metadata.download.url = url
-        write_metadata_file(entry.file, metadata)
+        metadata.download.url = file.downloadUrl
+        jobs.push(write_metadata_file(path,metadata))
     }
+    console.log('caching download urls for '+jobs.length+' files')
+    await allJobs()
+    refresh_index()
 }
 
 if (args["mr-detect"]) {
     console.debug('mr-detect')
     const hashes = new Map()
-    const nullHash = encodeHex(crypto.subtle.digestSync('SHA-1', new Uint8Array()))
     for (const entry of await get_index()) {
         if (entry.metafile) continue
-        const file = fs.readFileSync(entry.file)
-        const hash = encodeHex(crypto.subtle.digestSync('SHA-1', file))
-        if(hash===nullHash) continue
-        hashes.set(hash, entry.file)
+        jobs.push(fs.readFile(entry.file).then(function (data) {
+            if (data.length === 0) return
+            hashes.set(encodeHex(crypto.subtle.digestSync('SHA-1', data)),entry.file)
+        }))
     }
+    await allJobs()
     console.log('checking ' + hashes.size + ' files')
     const versions = await fetch('https://api.modrinth.com/v2/version_files', {
         'method': 'POST',
@@ -172,17 +202,19 @@ if (args["mr-detect"]) {
     }).then(get_response)
     for (const hash of hashes.keys()) {
         if (hash in versions) {
-            fs.unlinkSync(hashes.get(hash))
-            const status = spawnSync('packwiz',
-                ['modrinth', 'add', versions[hash].files[0].url],
-                { stdio: 'inherit', input: 'n\n' }
-            ).status
-            if (status !== 0) {
-                process.exit(status)
-            }
-            hashes.delete(hash)
+            jobs.push(fs.unlink(hashes.get(hash)).then(function () {
+                const status = spawnSync('packwiz',
+                    ['modrinth', 'add', versions[hash].files[0].url],
+                    { stdio: 'inherit', input: 'n\n' }
+                ).status
+                if (status !== 0) {
+                    process.exit(status)
+                }
+            }))
         }
     }
+    await allJobs()
+    refresh_index()
 }
 
 if (args["mr-merge"]) {
@@ -190,11 +222,13 @@ if (args["mr-merge"]) {
     const hashes = new Map()
     for (const entry of await get_index()) {
         if (!entry.metafile) continue
-        const file = read_metadata_file(entry.file)
-        if (!file.update.modrinth) {
-            hashes.set(file.download.hash, entry.file)
-        }
+        jobs.push(read_metadata_file(entry.file).then(function (metadata) {
+            if (!metadata.update.modrinth) {
+                hashes.set(metadata.download.hash, {metadata,path:entry.file})
+            }
+        }))
     }
+    await allJobs()
     console.log('checking ' + hashes.size + ' files')
     const versions = await fetch('https://api.modrinth.com/v2/version_files', {
         'method': 'POST',
@@ -206,26 +240,33 @@ if (args["mr-merge"]) {
             'algorithm': 'sha1'
         })
     }).then(get_response)
+    const foundFiles=new Map()
     for (const hash of hashes.keys()) {
         if (hash in versions) {
-            const path = hashes.get(hash)
-            const metadata = read_metadata_file(path)
-            console.log('adding modrinth metadata for ' + metadata.name)
+            const {path, metadata} = hashes.get(hash)
             metadata.update.modrinth = {
                 "mod-id": versions[hash]['project_id'],
                 "version": versions[hash]['id']
             }
             metadata.download.url = versions[hash]['files'][0]['url']
             delete metadata.download.mode
-            const project = await fetch('https://api.modrinth.com/v2/project/' + versions[hash]['project_id']).then(get_response)
-            if (project.server_side === 'unsupported') {
-                metadata.side = 'client'
-            } else if (project.client_side === 'unsupported') {
-                metadata.side = 'server'
-            }
-            write_metadata_file(path, metadata)
+            foundFiles.set(versions[hash]['project_id'],{path,metadata})
         }
     }
+    const url = new URL('https://api.modrinth.com/v2/projects')
+    const ids='["'+Array.from(foundFiles.keys()).join('","')+'"]'
+    url.searchParams.append('ids',ids)
+    const projects = await fetch(url).then(get_response)
+    for (const project of projects) {
+        const { path, metadata } = foundFiles.get(project.id)
+        if (project.server_side === 'unsupported') {
+            metadata.side = 'client'
+        } else if (project.client_side === 'unsupported') {
+            metadata.side = 'server'
+        }
+        jobs.push(write_metadata_file(path, metadata))
+    }
+    console.log('adding modrinth metadata to '+jobs.length+' files')
+    await allJobs()
+    refresh_index()
 }
-
-get_index()
