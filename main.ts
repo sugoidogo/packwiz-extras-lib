@@ -6,7 +6,7 @@ import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
 import { spawnSync } from 'node:child_process'
-import fs from 'node:fs'
+import fs, { Utf8Stream } from 'node:fs'
 
 type indexEntry = {
     file: string,
@@ -151,10 +151,12 @@ if (args["cf-url"]) {
 if (args["mr-detect"]) {
     console.debug('mr-detect')
     const hashes = new Map()
+    const nullHash = encodeHex(crypto.subtle.digestSync('SHA-1', new Uint8Array()))
     for (const entry of await get_index()) {
         if (entry.metafile) continue
         const file = fs.readFileSync(entry.file)
         const hash = encodeHex(crypto.subtle.digestSync('SHA-1', file))
+        if(hash===nullHash) continue
         hashes.set(hash, entry.file)
     }
     console.log('checking ' + hashes.size + ' files')
