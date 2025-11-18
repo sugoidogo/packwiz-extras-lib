@@ -24,8 +24,6 @@ if (deno) {
 
 if (bun) {
     const bun_targets = [
-        'bun-linux-x64-baseline',
-        'bun-linux-arm64',
         'bun-linux-x64-musl-baseline',
         'bun-linux-arm64-musl',
         'bun-windows-x64-baseline',
