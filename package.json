@@ -1,6 +1,6 @@
 {
   "name": "packwiz-ts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This is a small helper program to implement some missing features from packwiz",
   "main": "main.ts",
   "devDependencies": {
