@@ -37,6 +37,8 @@ const nodeEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
 
+//process.exit()
+
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
 spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'], { stdio: 'inherit' })
@@ -57,6 +59,6 @@ const denoEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
 
-console.log('node', nodeEnd - nodeStart)
-console.log('bun ', bunEnd - bunStart)
-console.log('deno', denoEnd - denoStart)
+console.log('node', (nodeEnd - nodeStart)/1000)
+console.log('bun ', (bunEnd - bunStart)/1000)
+console.log('deno', (denoEnd - denoStart)/1000)
