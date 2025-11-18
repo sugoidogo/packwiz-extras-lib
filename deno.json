@@ -13,6 +13,5 @@
       "write": true,
       "env": true
     }
-  },
-  "nodeModulesDir":"none"
+  }
 }
