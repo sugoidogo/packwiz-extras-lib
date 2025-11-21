@@ -326,7 +326,7 @@ if (args['test-server']) {
         loader_version = pack.versions[version_type]
     }
     spawnSync('docker', ['run', '-it', '--rm',
-        '-v', './:' + pack_dir,
+        '-v', pack_dir + ':/pack',
         '-e', 'PACKWIZ_URL=/pack/pack.toml',
         '-e', 'EULA=TRUE',
         '-e', 'MAX_MEMORY=8G',
