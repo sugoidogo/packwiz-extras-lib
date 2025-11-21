@@ -333,6 +333,6 @@ if (args['test-server']) {
         '-e', 'TYPE=' + loader,
         '-e', 'VERSION=' + minecraft_version,
         '-e', loader + '_VERSION=' + loader_version,
-        'itzg/minecraft-server:' + image_version]
+        'docker.io/itzg/minecraft-server:' + image_version]
     )
 }
