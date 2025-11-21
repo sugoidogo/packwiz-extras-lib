@@ -329,7 +329,7 @@ if (args['test-server']) {
         '-v', './:' + pack_dir,
         '-e', 'PACKWIZ_URL=/pack/pack.toml',
         '-e', 'EULA=TRUE',
-        '-e', 'MAX_MEMORY = 8G',
+        '-e', 'MAX_MEMORY=8G',
         '-e', 'TYPE=' + loader,
         '-e', 'VERSION=' + minecraft_version,
         '-e', loader + '_VERSION=' + loader_version,
