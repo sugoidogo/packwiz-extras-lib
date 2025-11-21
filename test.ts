@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import fs from 'node:fs'
-import { spawnSync } from "node:child_process"
+import spawnSync from './spawnSync'
 import { performance } from 'node:perf_hooks'
 
 dotenv.config()
@@ -29,10 +29,10 @@ if (!fs.existsSync('modpack.zip')) {
 
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
-spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'], { stdio: 'inherit' })
+spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
 console.log('testing with node')
 const nodeStart = performance.now()
-spawnSync('node', ['../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'], { stdio: 'inherit', 'shell': true })
+spawnSync('node', ['../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'])
 const nodeEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
@@ -41,20 +41,20 @@ fs.rmSync('test', { recursive: true })
 
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
-spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'], { stdio: 'inherit' })
+spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
 console.log('testing with bun')
 const bunStart = performance.now()
-spawnSync('bun', ['run', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'], { stdio: 'inherit', 'shell': true })
+spawnSync('bun', ['run', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'])
 const bunEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
 
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
-spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'], { stdio: 'inherit' })
+spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
 console.log('testing with deno')
 const denoStart = performance.now()
-spawnSync('deno', ['run', '-P', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'], { stdio: 'inherit', 'shell': true })
+spawnSync('deno', ['run', '-P', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'])
 const denoEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })

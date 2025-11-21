@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
-import { type SpawnSyncOptions, spawnSync as nodeSpawnSync } from 'node:child_process'
+import spawnSync from './spawnSync'
 import fs from 'node:fs/promises'
 
 type indexEntry = {
@@ -65,13 +65,6 @@ const args = parseArgs(process.argv, {
 if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"] || args['test-server'])) {
     console.log("usage: packwiz-util [--index=index.toml] [--pack=pack.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge] [--test-server]")
     process.exit()
-}
-
-function spawnSync(command: string, args?: readonly string[], options: SpawnSyncOptions = {}) {
-    if (!options.stdio) options.stdio = 'inherit'
-    const { status, error } = nodeSpawnSync(command, args, options)
-    if (error) throw error
-    if (status !== 0) process.exit(status)
 }
 
 function get_response(response: Response) {
