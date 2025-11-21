@@ -37,15 +37,34 @@ type metaData = {
     }
 }
 
+type pack = {
+    name: string
+    author: string
+    version: string
+    "pack-format": string
+    index: {
+        file: string
+        "hash-format": string
+        hash: string
+    }
+    versions: {
+        minecraft: string
+        forge?: string
+        neoforge?: string
+        fabric?: string
+        quilt?: string
+    }
+}
+
 dotenv.config
 const args = parseArgs(process.argv, {
-    string: ['index', 'cf-api-key'],
-    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge'],
-    default: { 'index': 'index.toml', 'cf-api-key': process.env['CF_API_KEY'] }
+    string: ['index', 'cf-api-key', 'pack'],
+    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server'],
+    default: { 'cf-api-key': process.env['CF_API_KEY'] }
 })
 
-if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"])) {
-    console.log("usage: packwiz-util [--index=index.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge]")
+if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"] || args['test-server'])) {
+    console.log("usage: packwiz-util [--index=index.toml] [--pack=pack.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge] [--test-server]")
     process.exit()
 }
 
@@ -66,7 +85,24 @@ function get_key() {
     return cfKey
 }
 
+async function get_pack() {
+    if (!args.pack) {
+        args.pack = 'pack.toml'
+    }
+    return fs.readFile(args.pack, 'utf-8').then(function (data) {
+        return TOML.parse(data) as pack
+    })
+}
+
 async function get_index() {
+    if (!args.index) {
+        if (args.pack) {
+            const pack = await get_pack()
+            args.index = pack.index.file
+        } else {
+            args.index = 'index.toml'
+        }
+    }
     return fs.readFile(args.index, 'utf-8').then(function (data) {
         return TOML.parse(data).files as indexEntry[]
     })
@@ -269,4 +305,40 @@ if (args["mr-merge"]) {
     console.log('adding modrinth metadata to '+jobs.length+' files')
     await allJobs()
     refresh_index()
+}
+
+if (args['test-server']) {
+    const pack = await get_pack()
+    const pack_dir = Path.dirname(Path.resolve(process.cwd(), args.pack!))
+    let loader = 'VANILLA';
+    let loader_version;
+    let minecraft_version;
+    let image_version;
+    let version_type: keyof pack['versions']
+    for (version_type in pack.versions) {
+        if (version_type === 'minecraft') {
+            minecraft_version = pack.versions[version_type]
+            // https://docker-minecraft-server.readthedocs.io/en/latest/versions/java/#forge-versions
+            const minor_version = Number(minecraft_version.split('.')[1])
+            if (minor_version < 18) {
+                image_version = 'java8'
+                continue
+            }
+            image_version = 'java17'
+            continue
+        }
+        loader = version_type.toUpperCase()
+        loader_version = pack.versions[version_type]
+    }
+    spawnSync('docker', ['run', '-it', '--rm',
+        '-v', './:' + pack_dir,
+        '-e', 'PACKWIZ_URL=/pack/pack.toml',
+        '-e', 'EULA=TRUE',
+        '-e', 'MAX_MEMORY = 8G',
+        '-e', 'TYPE=' + loader,
+        '-e', 'VERSION=' + minecraft_version,
+        '-e', loader + '_VERSION=' + loader_version,
+        'itzg/minecraft-server:' + image_version],
+        { stdio: 'inherit' }
+    )
 }
