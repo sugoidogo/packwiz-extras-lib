@@ -5,8 +5,7 @@ import dotenv from 'dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
-import { spawnSync } from 'node:child_process'
-import { Utf8Stream } from 'node:fs'
+import { type SpawnSyncOptions, spawnSync as nodeSpawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 
 type indexEntry = {
@@ -68,6 +67,13 @@ if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge
     process.exit()
 }
 
+function spawnSync(command: string, args?: readonly string[], options: SpawnSyncOptions = {}) {
+    if (!options.stdio) options.stdio = 'inherit'
+    const { status, error } = nodeSpawnSync(command, args, options)
+    if (error) throw error
+    if (status !== 0) process.exit(status)
+}
+
 function get_response(response: Response) {
     if (!response.ok) {
         console.error(response.statusText)
@@ -109,10 +115,7 @@ async function get_index() {
 }
 
 function refresh_index() {
-    const status = spawnSync('packwiz', ['refresh'], { stdio: 'inherit' }).status
-    if (status !== 0) {
-        process.exit(status)
-    }
+    spawnSync('packwiz', ['refresh'])
 }
 
 async function read_metadata_file(path: string) {
@@ -159,16 +162,12 @@ if (args["cf-detect"]) {
         const path = fingerprints.get(match.file.fileFingerprint)
         if (!path) continue
         jobs.push(fs.unlink(path).then(function () {
-            const status = spawnSync('packwiz',
-                ['curseforge', 'add',
-                    '--addon-id', match.file.modId,
-                    '--file-id', match.file.id,
-                    '--meta-folder', Path.dirname(path)],
-                { stdio: 'inherit' }
-            ).status
-            if (status !== 0) {
-                process.exit(status)
-            }
+            spawnSync('packwiz', [
+                'curseforge', 'add',
+                '--addon-id', match.file.modId,
+                '--file-id', match.file.id,
+                '--meta-folder', Path.dirname(path)
+            ])
         }))
     }
     await allJobs()
@@ -239,13 +238,9 @@ if (args["mr-detect"]) {
     for (const hash of hashes.keys()) {
         if (hash in versions) {
             jobs.push(fs.unlink(hashes.get(hash)).then(function () {
-                const status = spawnSync('packwiz',
-                    ['modrinth', 'add', versions[hash].files[0].url],
-                    { stdio: 'inherit', input: 'n\n' }
-                ).status
-                if (status !== 0) {
-                    process.exit(status)
-                }
+                spawnSync('packwiz',
+                    ['modrinth', 'add', versions[hash].files[0].url]
+                )
             }))
         }
     }
@@ -338,7 +333,6 @@ if (args['test-server']) {
         '-e', 'TYPE=' + loader,
         '-e', 'VERSION=' + minecraft_version,
         '-e', loader + '_VERSION=' + loader_version,
-        'itzg/minecraft-server:' + image_version],
-        { stdio: 'inherit' }
+        'itzg/minecraft-server:' + image_version]
     )
 }
