@@ -55,7 +55,7 @@ type pack = {
     }
 }
 
-dotenv.config
+dotenv.config()
 const args = parseArgs(process.argv, {
     string: ['index', 'cf-api-key', 'pack'],
     boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server'],
