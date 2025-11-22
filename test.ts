@@ -26,7 +26,7 @@ if (!fs.existsSync('modpack.zip')) {
     process.stdout.write('\n')
     writeStream.close()
 }
-
+/*
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
 spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
@@ -36,7 +36,7 @@ spawnSync('node', ['../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-
 const nodeEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
-
+*/
 //process.exit()
 
 fs.mkdirSync('test', { recursive: true })
@@ -48,7 +48,7 @@ spawnSync('bun', ['run', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', 
 const bunEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })
-
+/*
 fs.mkdirSync('test', { recursive: true })
 process.chdir('test')
 spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
@@ -62,3 +62,4 @@ fs.rmSync('test', { recursive: true })
 console.log('node', (nodeEnd - nodeStart)/1000)
 console.log('bun ', (bunEnd - bunStart)/1000)
 console.log('deno', (denoEnd - denoStart)/1000)
+*/
