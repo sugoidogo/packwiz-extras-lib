@@ -296,6 +296,7 @@ if (args["mr-merge"]) {
 }
 
 if (args['test-server']) {
+    console.log('test-server')
     const pack = await get_pack()
     const pack_dir = Path.dirname(Path.resolve(process.cwd(), args.pack!))
     let loader = 'VANILLA';
