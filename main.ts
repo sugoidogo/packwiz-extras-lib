@@ -314,7 +314,6 @@ if (args["mr-merge"]) {
 if (args['test-server']) {
     console.log('test-server')
     const pack = await get_pack()
-    const pack_dir = Path.dirname(Path.resolve(process.cwd(), args.pack!))
     let loader = 'VANILLA';
     let loader_version;
     let minecraft_version;
@@ -336,7 +335,7 @@ if (args['test-server']) {
         loader_version = pack.versions[version_type]
     }
     spawnSync('docker', ['run', '-it', '--rm',
-        '-v', pack_dir + ':/pack',
+        '-v', './:/pack',
         '-e', 'PACKWIZ_URL=/pack/pack.toml',
         '-e', 'EULA=TRUE',
         '-e', 'MAX_MEMORY=8G',
