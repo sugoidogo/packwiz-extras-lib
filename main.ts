@@ -57,15 +57,41 @@ type pack = {
 
 dotenv.config()
 const args = parseArgs(process.argv, {
-    string: ['index', 'cf-api-key', 'pack'],
-    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server'],
-    default: { 'cf-api-key': process.env['CF_API_KEY'] }
+    string: ['index', 'cf-api-key', 'pack', 'pack-file'],
+    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'help'],
+    default: { 'cf-api-key': process.env['CF_API_KEY'], 'pack-file': 'pack.toml' }
 })
 
-if (!(args["cf-detect"] || args["cf-url"] || args["mr-detect"] || args["mr-merge"] || args['test-server'])) {
-    console.log("usage: packwiz-util [--index=index.toml] [--pack=pack.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge] [--test-server]")
+if (args.index) {
+    args['pack-file'] = Path.resolve(Path.dirname(Path.resolve(process.cwd(), args.index)), 'pack.toml')
+    args.index = undefined
+    console.warn('--index has been depreciated, for consistency with packwiz please use --pack-file')
+}
+
+if (args.pack) {
+    args['pack-file'] = args.pack
+    args.pack = undefined
+    console.warn('--pack has been renamed to --pack-file for consistency with packwiz')
+}
+
+if (args.help) {
+    console.log("packwiz-util: extra utilities for packwiz")
+    console.log()
+    console.log('--pack-file=pack.toml\tthe modpack metadata file to use (default "pack.toml")')
+    console.log()
+    console.log("--cf-api-key='YOUR_API_KEY'\tyour curseforge API key, required for all --cf functions. Can also be provided via CF_API_KEY environment variable or .env file")
+    console.log('--cf-detect\t\t\tdetect and replace any non-metafiles that are availible on curseforge')
+    console.log('--cf-url\t\t\tcache the download URLs of curseforge files, speeds up packwiz-installer')
+    console.log()
+    console.log('--mr-detect\tdetect and replace any non-metafiles that are availible on modrinth')
+    console.log('--mr-merge\tdetect any curseforge files that are availible on modrinth and merge their metadata')
+    console.log()
+    console.log('--test-server\tuse docker to test the installation and startup of your modpack. Once startup is complete, use the stop command to exit.')
     process.exit()
 }
+
+args['pack-file'] = Path.resolve(process.cwd(), args['pack-file'])
+process.chdir(Path.dirname(args['pack-file']))
 
 function get_response(response: Response) {
     if (!response.ok) {
@@ -85,24 +111,14 @@ function get_key() {
 }
 
 async function get_pack() {
-    if (!args.pack) {
-        args.pack = 'pack.toml'
-    }
-    return fs.readFile(args.pack, 'utf-8').then(function (data) {
+    return fs.readFile(args['pack-file'], 'utf-8').then(function (data) {
         return TOML.parse(data) as pack
     })
 }
 
 async function get_index() {
-    if (!args.index) {
-        if (args.pack) {
-            const pack = await get_pack()
-            args.index = pack.index.file
-        } else {
-            args.index = 'index.toml'
-        }
-    }
-    return fs.readFile(args.index, 'utf-8').then(function (data) {
+    const pack = await get_pack()
+    return fs.readFile(pack.index.file, 'utf-8').then(function (data) {
         return TOML.parse(data).files as indexEntry[]
     })
 }
