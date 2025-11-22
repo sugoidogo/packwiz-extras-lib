@@ -52,6 +52,7 @@ type pack = {
         neoforge?: string
         fabric?: string
         quilt?: string
+        liteloader?: string
     }
 }
 
