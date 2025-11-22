@@ -6,13 +6,16 @@ This is a small helper program to implement some missing features from
 # Usage
 
 ```
-packwiz-util [--index=index.toml] [--cf-api-key='CF_API_KEY'] [--cf-detect] [--cf-url] [--mr-detect] [--mr-merge] [--test-server]
-```
+packwiz-util: extra utilities for packwiz
 
-- `--index` path to the packwiz pack's `index.toml` file, defaults to `index.toml` in the working directory
-- `--cf-api-key` required for all `--cf` operations, can also be provided via `CF_API_KEY` environment variable or `.env` file. You can find your API key on the [curseforge console](https://console.curseforge.com/?#/api-keys)
-- `--cf-detect` checks all non-metafiles in the modpack for availibility on curseforge and replaces them
-- `--cf-url` cache the direct download url of each curseforge file into the modpack, speeds up `packwiz-installer`
-- `--mr-detect` checks all non-metafiles in the modpack for availibility on modrinth and replaces them
-- `--mr-merge` checks all curseforge files for availibility on modrinth and merges the metadata
-- `--test-server` starts a docker container to test the server side of the modpack
+--pack-file=pack.toml   the modpack metadata file to use (default "pack.toml")
+
+--cf-api-key='YOUR_API_KEY'     your curseforge API key, required for all --cf functions. Can also be provided via CF_API_KEY environment variable or .env file
+--cf-detect                     detect and replace any non-metafiles that are availible on curseforge
+--cf-url                        cache the download URLs of curseforge files, speeds up packwiz-installer
+
+--mr-detect     detect and replace any non-metafiles that are availible on modrinth
+--mr-merge      detect any curseforge files that are availible on modrinth and merge their metadata
+
+--test-server   use docker to test the installation and startup of your modpack. Once startup is complete, use the stop command to exit.
+```
