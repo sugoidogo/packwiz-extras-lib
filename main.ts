@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 import { parseArgs } from '@std/cli'
 import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
-import spawnSync from './spawnSync'
+import spawnSync from './spawnSync.ts'
 import fs from 'node:fs/promises'
 
 type indexEntry = {

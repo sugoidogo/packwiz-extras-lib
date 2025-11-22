@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import fs from 'node:fs'
-import spawnSync from './spawnSync'
+import spawnSync from './spawnSync.ts'
 import { performance } from 'node:perf_hooks'
 
 dotenv.config()

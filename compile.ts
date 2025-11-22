@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process"
+import spawnSync from "./spawnSync.ts"
 
 const deno = false // works, but produces largest executables
 const bun = true // smallest working executables, but build failing on windows
