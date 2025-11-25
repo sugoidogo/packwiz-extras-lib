@@ -323,17 +323,25 @@ if (args['test-server']) {
     for (version_type in pack.versions) {
         if (version_type === 'minecraft') {
             minecraft_version = pack.versions[version_type]
-            // https://docker-minecraft-server.readthedocs.io/en/latest/versions/java/#forge-versions
-            const minor_version = Number(minecraft_version.split('.')[1])
-            if (minor_version < 18) {
-                image_version = 'java8'
-                continue
-            }
-            image_version = 'java17'
             continue
         }
         loader = version_type.toUpperCase()
         loader_version = pack.versions[version_type]
+    }
+    // https://docker-minecraft-server.readthedocs.io/en/latest/versions/java/#forge-versions
+    const minor_version = Number(minecraft_version!.split('.')[1])
+    if (loader.endsWith('FORGE')) {
+        if (minor_version < 18) {
+            image_version = 'java8'
+        } else {
+            image_version = 'java17'
+        }
+    } else { // https://minecraft.wiki/w/Tutorial:Update_Java#Why_update?
+        if (minor_version < 17) {
+            image_version = 'java8'
+        } else {
+            image_version = 'stable'
+        }
     }
     spawnSync('docker', ['run', '-it', '--rm',
         '-v', './:/pack',
