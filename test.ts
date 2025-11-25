@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import spawnSync from './spawnSync.ts'
 import { performance } from 'node:perf_hooks'
 
-dotenv.config()
+dotenv.config({ quiet: true })
 if (!fs.existsSync('modpack.zip')) {
     console.log('downloading test modpack...')
     const response = await fetch('https://mediafilez.forgecdn.net/files/7223/56/All%20the%20Mods%2010-5.1.zip')
@@ -44,7 +44,7 @@ process.chdir('test')
 spawnSync('packwiz', ['curseforge', 'import', '../modpack.zip'])
 console.log('testing with bun')
 const bunStart = performance.now()
-spawnSync('bun', ['run', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect'])
+spawnSync('bun', ['run', '../main.ts', '--cf-detect', '--cf-url', '--mr-merge', '--mr-detect', '--test-server', '--test-client'])
 const bunEnd = performance.now()
 process.chdir('..')
 fs.rmSync('test', { recursive: true })

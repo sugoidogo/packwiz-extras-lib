@@ -7,6 +7,7 @@ import { crypto } from '@std/crypto'
 import { encodeHex } from "@std/encoding/hex"
 import spawnSync from './spawnSync.ts'
 import fs from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 
 type indexEntry = {
     file: string,
@@ -58,8 +59,8 @@ type pack = {
 
 dotenv.config({quiet:true})
 const args = parseArgs(process.argv, {
-    string: ['index', 'cf-api-key', 'pack', 'pack-file'],
-    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'help'],
+    string: ['index', 'cf-api-key', 'pack', 'pack-file', 'test-dir'],
+    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'test-client', 'help'],
     default: { 'cf-api-key': process.env['CF_API_KEY'], 'pack-file': 'pack.toml' }
 })
 
@@ -143,6 +144,14 @@ let jobs: Promise<void>[] = []
 
 async function allJobs() {
     return Promise.all(jobs).then(function () {jobs=[]})
+}
+
+async function getTestDir() {
+    if (args['test-dir']) {
+        fs.mkdir(args['test-dir'], { recursive: true })
+        return args['test-dir']
+    }
+    return fs.mkdtemp(Path.join(tmpdir(), 'packwiz-util-'))
 }
 
 if (args["cf-detect"]) {
@@ -353,4 +362,36 @@ if (args['test-server']) {
         '-e', loader + '_VERSION=' + loader_version,
         'docker.io/itzg/minecraft-server:' + image_version]
     )
+}
+
+if (args['test-client']) {
+    console.log('test-client')
+    const test_dir = await getTestDir()
+    console.log('downloading packwiz installer...')
+    await fetch('https://github.com/packwiz/packwiz-installer-bootstrap/releases/latest/download/packwiz-installer-bootstrap.jar')
+        .then(response => response.bytes())
+        .then(bytes => fs.writeFile(test_dir + '/packwiz.jar', bytes))
+    console.log('installing modpack to ' + test_dir + '...')
+    spawnSync('java', ['-jar', 'packwiz.jar', args['pack-file'], '-g'], { cwd: test_dir })
+    const pack = await get_pack()
+    let loader = 'VANILLA';
+    let minecraft_version;
+    let version_type: keyof pack['versions']
+    for (version_type in pack.versions) {
+        if (version_type === 'minecraft') {
+            minecraft_version = pack.versions[version_type]
+            continue
+        }
+        loader = version_type.toUpperCase()
+    }
+    console.log('testing modpack...')
+    spawnSync('docker', ['run', '-it', '--rm',
+        '-v', test_dir + ':/headlessmc/HeadlessMC/run',
+        '--entrypoint', 'java',
+        '3arthqu4ke/headlessmc:latest',
+        '-jar', 'headlessmc-launcher-wrapper.jar',
+        '-Dhmc.assets.dummy=true', '--command',
+        'launch', `${loader}:${minecraft_version}`, '-offline'
+    ])
+    fs.rmdir(test_dir, { recursive: true })
 }
