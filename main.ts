@@ -8,6 +8,8 @@ import { encodeHex } from "@std/encoding/hex"
 import spawnSync from './spawnSync.ts'
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { spawn } from 'node:child_process'
+import { createInterface } from 'node:readline'
 
 type indexEntry = {
     file: string,
@@ -59,9 +61,9 @@ type pack = {
 
 dotenv.config({quiet:true})
 const args = parseArgs(process.argv, {
-    string: ['index', 'cf-api-key', 'pack', 'pack-file', 'test-dir'],
+    string: ['index', 'cf-api-key', 'pack', 'pack-file', 'test-dir', 'java'],
     boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'test-client', 'help'],
-    default: { 'cf-api-key': process.env['CF_API_KEY'], 'pack-file': 'pack.toml' }
+    default: { 'cf-api-key': process.env['CF_API_KEY'], 'pack-file': 'pack.toml', 'java':'stable' }
 })
 
 if (args.index) {
@@ -327,7 +329,6 @@ if (args['test-server']) {
     let loader = 'VANILLA';
     let loader_version;
     let minecraft_version;
-    let image_version;
     let version_type: keyof pack['versions']
     for (version_type in pack.versions) {
         if (version_type === 'minecraft') {
@@ -337,22 +338,7 @@ if (args['test-server']) {
         loader = version_type.toUpperCase()
         loader_version = pack.versions[version_type]
     }
-    // https://docker-minecraft-server.readthedocs.io/en/latest/versions/java/#forge-versions
-    const minor_version = Number(minecraft_version!.split('.')[1])
-    if (loader.endsWith('FORGE')) {
-        if (minor_version < 18) {
-            image_version = 'java8'
-        } else {
-            image_version = 'java17'
-        }
-    } else { // https://minecraft.wiki/w/Tutorial:Update_Java#Why_update?
-        if (minor_version < 17) {
-            image_version = 'java8'
-        } else {
-            image_version = 'stable'
-        }
-    }
-    spawnSync('docker', ['run', '-it', '--rm',
+    const process=spawn('docker', ['run', '-it', '--rm',
         '-v', './:/pack',
         '-e', 'PACKWIZ_URL=/pack/pack.toml',
         '-e', 'EULA=TRUE',
@@ -360,8 +346,18 @@ if (args['test-server']) {
         '-e', 'TYPE=' + loader,
         '-e', 'VERSION=' + minecraft_version,
         '-e', loader + '_VERSION=' + loader_version,
-        'docker.io/itzg/minecraft-server:' + image_version]
+        'docker.io/itzg/minecraft-server:' + args.java],
+        { stdio:'pipe'}
     )
+    const readline = createInterface(process.stdout, process.stdin)
+    for await (const line of readline) {
+        if(line==='>....') continue
+        console.log(line)
+        if (line.endsWith("For help, type \"help\"")) {
+            const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
+            delay(10000).then(() => readline.write('stop\n'))
+        }
+    }
 }
 
 if (args['test-client']) {
@@ -388,7 +384,7 @@ if (args['test-client']) {
     spawnSync('docker', ['run', '-it', '--rm',
         '-v', test_dir + ':/headlessmc/HeadlessMC/run',
         '--entrypoint', 'java',
-        '3arthqu4ke/headlessmc:latest',
+        'docker.io/3arthqu4ke/headlessmc:latest',
         '-jar', 'headlessmc-launcher-wrapper.jar',
         '-Dhmc.assets.dummy=true', '--command',
         'launch', `${loader}:${minecraft_version}`, '-offline'
