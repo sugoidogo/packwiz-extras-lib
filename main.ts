@@ -10,6 +10,7 @@ import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
+import download from './downloadProgress.ts'
 
 type indexEntry = {
     file: string,
@@ -62,7 +63,7 @@ type pack = {
 dotenv.config({quiet:true})
 const args = parseArgs(process.argv, {
     string: ['index', 'cf-api-key', 'pack', 'pack-file', 'test-dir', 'java'],
-    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'test-client', 'help'],
+    boolean: ['cf-detect', 'cf-url', 'mr-detect', 'mr-merge', 'test-server', 'test-client', 'offline', 'help'],
     default: { 'cf-api-key': process.env['CF_API_KEY'], 'pack-file': 'pack.toml', 'java':'stable' }
 })
 
@@ -362,16 +363,10 @@ if (args['test-server']) {
 
 if (args['test-client']) {
     console.log('test-client')
-    const test_dir = await getTestDir()
-    console.log('downloading packwiz installer...')
-    await fetch('https://github.com/packwiz/packwiz-installer-bootstrap/releases/latest/download/packwiz-installer-bootstrap.jar')
-        .then(response => response.bytes())
-        .then(bytes => fs.writeFile(test_dir + '/packwiz.jar', bytes))
-    console.log('installing modpack to ' + test_dir + '...')
-    spawnSync('java', ['-jar', 'packwiz.jar', args['pack-file'], '-g'], { cwd: test_dir })
     const pack = await get_pack()
     let loader = 'VANILLA';
-    let minecraft_version;
+    let loader_version = '';
+    let minecraft_version = '';
     let version_type: keyof pack['versions']
     for (version_type in pack.versions) {
         if (version_type === 'minecraft') {
@@ -379,15 +374,37 @@ if (args['test-client']) {
             continue
         }
         loader = version_type.toUpperCase()
+        loader_version = pack.versions[version_type]!
     }
-    console.log('testing modpack...')
-    spawnSync('docker', ['run', '-it', '--rm',
-        '-v', test_dir + ':/headlessmc/HeadlessMC/run',
-        '--entrypoint', 'java',
-        'docker.io/3arthqu4ke/headlessmc:latest',
-        '-jar', 'headlessmc-launcher-wrapper.jar',
-        '-Dhmc.assets.dummy=true', '--command',
-        'launch', `${loader}:${minecraft_version}`, '-offline'
-    ])
-    fs.rmdir(test_dir, { recursive: true })
+    const test_dir = '.test'
+    await fs.mkdir(test_dir, { recursive: true })
+    process.chdir(test_dir)
+    jobs.push(
+        fetch('https://github.com/packwiz/packwiz-installer-bootstrap/releases/latest/download/packwiz-installer-bootstrap.jar')
+            .then(response => response.bytes())
+            .then(bytes => fs.writeFile('packwiz-installer-bootstrap.jar', bytes))
+    )
+    jobs.push(
+        fetch('https://api.github.com/repos/headlesshq/headlessmc/releases/latest')
+            .then(response => response.json())
+            .then(release => {
+                for (const asset of release.assets) {
+                    if (asset.name.startsWith('headlessmc-launcher-wrapper')) {
+                        return download(asset.browser_download_url, 'hmc.jar')
+                    }
+                }
+                throw new Error('failed to find hmc jar on github releases')
+            })
+    )
+    await allJobs()
+    spawnSync('java', ['-jar', 'packwiz-installer-bootstrap.jar', '../pack.toml', '-g'])
+    spawnSync('java', ['-jar', 'hmc.jar', '--command', 'config', '--property', 'hmc.game.dir=' + process.cwd()])
+    if (args.offline) {
+        spawnSync('java', ['-jar', 'hmc.jar', '--command', 'launch', loader + ':' + minecraft_version, '-offline'])
+    } else {
+        spawnSync('java', ['-jar', 'hmc.jar', '--command', 'login'])
+        spawnSync('java', ['-jar', 'hmc.jar', '--command', 'launch', loader + ':' + minecraft_version])
+    }
+    process.chdir('..')
+    await fs.rm(test_dir)
 }
