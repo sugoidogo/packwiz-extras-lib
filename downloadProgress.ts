@@ -1,6 +1,10 @@
 import fs from 'node:fs'
 
 export default async function download(url: string, path: string) {
+    if (fs.existsSync(path)) {
+        return console.log(path + ' already downloaded')
+    }
+    console.log('downloading ' + url + ' to ' + path)
     const response = await fetch(url)
     if (!response.ok) {
             console.error(response.statusText)
