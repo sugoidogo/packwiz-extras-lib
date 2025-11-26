@@ -92,6 +92,8 @@ if (args.help) {
     console.log('--mr-merge\tdetect any curseforge files that are availible on modrinth and merge their metadata')
     console.log()
     console.log('--test-server\tuse docker to test the installation and startup of your modpack. Once startup is complete, use the stop command to exit.')
+    console.log('--java\tuse a specific version of java to test the server, for example --java java8')
+    console.log('\tsee https://docker-minecraft-server.readthedocs.io/en/latest/versions/java/#image-tags')
     process.exit()
 }
 
