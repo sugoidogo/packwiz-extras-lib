@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import download from './downloadProgress.ts'
+import envPaths from 'env-paths'
 
 type indexEntry = {
     file: string,
@@ -379,7 +380,7 @@ if (args['test-client']) {
         loader = version_type.toUpperCase()
         loader_version = pack.versions[version_type]!
     }
-    const test_dir = '.test'
+    const test_dir = envPaths('packwiz-util', { 'suffix': encodeURI(pack.name.replaceAll(' ', '-')) }).cache
     await fs.mkdir(test_dir, { recursive: true })
     process.chdir(test_dir)
     jobs.push(
@@ -400,7 +401,7 @@ if (args['test-client']) {
             })
     )
     await allJobs()
-    spawnSync('java', ['-jar', 'packwiz-installer-bootstrap.jar', '../pack.toml', '-g'])
+    spawnSync('java', ['-jar', 'packwiz-installer-bootstrap.jar', args['pack-file'], '-g'])
     spawnSync('java', ['-jar', 'hmc.jar', '--command', 'config', '--property', 'hmc.game.dir=' + process.cwd()])
     if (args.offline) {
         spawnSync('java', ['-jar', 'hmc.jar', '--command', 'launch', loader + ':' + minecraft_version, '-offline'])
