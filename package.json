@@ -17,6 +17,7 @@
     "@std/encoding": "npm:@jsr/std__encoding@^1.0.10",
     "@std/path": "npm:@jsr/std__path@^1.1.2",
     "@std/toml": "npm:@jsr/std__toml@^1.0.11",
+    "confbox": "^0.2.2",
     "dotenv": "^17.2.3",
     "env-paths": "^3.0.0",
     "murmur2": "^1.0.2"
