@@ -191,7 +191,7 @@ if (args["cf-detect"]) {
                 '--addon-id', match.file.modId,
                 '--file-id', match.file.id,
                 '--meta-folder', Path.dirname(path)
-            ])
+            ], { 'input': 'n\n' })
         }))
     }
     await allJobs()
@@ -263,7 +263,8 @@ if (args["mr-detect"]) {
         if (hash in versions) {
             jobs.push(fs.unlink(hashes.get(hash)).then(function () {
                 spawnSync('packwiz',
-                    ['modrinth', 'add', versions[hash].files[0].url]
+                    ['modrinth', 'add', versions[hash].files[0].url],
+                    { 'input': 'n\n' }
                 )
             }))
         }
