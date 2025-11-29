@@ -20,6 +20,7 @@
     "confbox": "^0.2.2",
     "dotenv": "^17.2.3",
     "env-paths": "^3.0.0",
-    "murmur2": "^1.0.2"
+    "murmur2": "^1.0.2",
+    "web-worker": "^1.5.0"
   }
 }
