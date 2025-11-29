@@ -7,21 +7,26 @@ export default async function download(url: string, path: string) {
     console.log('downloading ' + url + ' to ' + path)
     const response = await fetch(url)
     if (!response.ok) {
-            console.error(response.statusText)
-            process.exit(1)
+        console.error(response.statusText)
+        process.exit(1)
+    }
+    const reader = response.body?.getReader()
+    const writeStream = fs.createWriteStream(path,'binary')
+    const totalSize = Number(response.headers.get('content-length'))
+    let receivedSize = 0
+    let chunk = await reader!.read()
+    let lastProgress = 0
+    while (!chunk.done) {
+        writeStream.write(chunk.value)
+        receivedSize += chunk.value!.length
+        const progress = Math.floor((receivedSize / totalSize) * 100)
+        if (process.stdout.isTTY) process.stdout.write(progress + '%\r')
+        else if (progress !== lastProgress) {
+            process.stdout.write('.')
+            lastProgress=progress
         }
-        const reader = response.body?.getReader()
-        const writeStream = fs.createWriteStream(path, { encoding: 'binary' })
-        const totalSize = Number(response.headers.get('content-length'))
-        let receivedSize = 0
-        let chunk = await reader!.read()
-        while (!chunk.done) {
-            writeStream.write(chunk.value)
-            receivedSize += chunk.value!.length
-            const progress = Math.floor((receivedSize / totalSize) * 100)
-            process.stdout.write(progress + '%\r')
-            chunk = await reader!.read()
-        }
-        process.stdout.write('\n')
-        writeStream.close()
+        chunk = await reader!.read()
+    }
+    process.stdout.write('\n')
+    writeStream.close()
 }
