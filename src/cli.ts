@@ -10,5 +10,12 @@ if (!cfKey) {
     throw new Error('missing cf api key')
 }
 await packwiz.cfDetect('pack.toml', cfKey)
-await packwiz.cfUrl('pack.toml',cfKey)
+    .then(results=>console.debug(results.values().next().value))
+await packwiz.cfUrl('pack.toml', cfKey)
+    .then(results => console.debug(results.values().next().value))
 await packwiz.mrDetect('pack.toml')
+    .then(results => console.debug(results.values().next().value))
+await packwiz.mrMerge('pack.toml')
+    .then(results => console.debug(results.values().next().value))
+
+process.exit()

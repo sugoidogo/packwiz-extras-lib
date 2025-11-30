@@ -13,7 +13,7 @@ function onMessage(event:MessageEvent) {
 
 let workerCount = 1
 if (isNode) {
-    workerCount=require('node:os').cpus()
+    workerCount=require('node:os').cpus().length
 } else {
     workerCount=navigator.hardwareConcurrency
 }
@@ -27,14 +27,10 @@ for (let i = 0; i < workerCount; i++){
 let job_id=0
 let promises = new Map < number, { resolve: (value: number) => void, reject: (value: unknown) => void }>()
 
-function executor(id: number, resolve: (value: number) => void, reject: (value: unknown) => void) {
-    promises.set(id,{resolve,reject})
-}
-
 export default async function murmur2(key: Uint8Array, seed: number, removeWhitespaces: boolean): Promise<number> {
-    console.debug(workers)
-    console.debug(job_id % workerCount)
-    workers[job_id % workerCount].postMessage({ id: job_id, key, seed, removeWhitespaces })
-    job_id++
-    return new Promise<number>((resolve,reject)=>executor(job_id,resolve,reject))
+    return new Promise<number>(function (resolve, reject) {
+        promises.set(job_id, { resolve, reject })
+        workers[job_id % workerCount].postMessage({ id: job_id, key, seed, removeWhitespaces })
+        job_id++
+    })
 }

@@ -177,9 +177,9 @@ export async function mrDetect(pack_url: string, size_min=4096): Promise<Map<Pat
                 "url": match.files[0].url
             },
             "update": {
-                "curseforge": {
-                    "file-id": match.id,
-                    "project-id": match.project_id
+                "modrinth": {
+                    "version": match.id,
+                    "mod-id": match.project_id
                 }
             }
         }
@@ -234,5 +234,77 @@ export async function cfUrl(pack_url: string, cfApiKey: string): Promise<Map<Pat
         result.set(file_url,mod)
     }
     console.log(`found ${result.size} download urls`)
+    return result
+}
+
+export async function mrMerge(pack_url: string): Promise<Map<Path, Mod>> {
+    console.log('loading pack')
+    const pack = await fetch_toml(pack_url) as Pack
+    const pack_dir = dirname(pack_url)
+    const index_url = `${pack_dir}/${pack.index.file}`
+    console.log('loading index')
+    const index = await fetch_toml(index_url) as Index
+    const index_dir = dirname(index_url)
+    if (!index.files) {
+        console.warn(`${index_url} has no files indexed`)
+        return new Map()
+    }
+    console.log('loading curseforge files')
+    const file_hash_map:any={}
+    await Promise.all(index.files.map(async function (file) {
+        if (!file.metafile) return
+        const file_url = `${index_dir}/${file.file}`
+        const mod = await fetch_toml(file_url) as Mod
+        if (mod.update && mod.update.modrinth) return
+        if (!file_hash_map[mod.download['hash-format']]) file_hash_map[mod.download['hash-format']] = {}
+        file_hash_map[mod.download['hash-format']][mod.download.hash]={file_url,mod}
+    }))
+    console.log('requesting matches from modrinth')
+    const project_matches = new Map<string, any>()
+    for (const hash_format in file_hash_map) {
+        const matches = await fetch_json('https://api.modrinth.com/v2/version_files', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                'accept': 'application/json'
+            },
+            body: JSON.stringify({
+                "algorithm": hash_format,
+                "hashes": Array.from(Object.keys(file_hash_map[hash_format]))
+            })
+        })
+        for (const match of Object.values(matches) as any[]) project_matches.set(match.project_id, match)
+    }
+    const projects = await fetch_json(`https://api.modrinth.com/v2/projects?ids=["${Array.from(project_matches.keys()).join('","')}"]`)
+    const result = new Map<Path, Mod>()
+    for (const project of projects) {
+        const match = project_matches.get(project.id)
+        if (!match) {
+            console.debug("modrinth returned a project result we didn't ask for, skipping", project)
+            continue
+        }
+        let file_url: Path|undefined
+        let mod: Mod|undefined
+        for (const hash_format in file_hash_map) {
+            ({file_url,mod}=file_hash_map[hash_format][match.files[0].hashes[hash_format].toLowerCase().replace('-','')])
+        }
+        if (!file_url || !mod) {
+            console.debug("modrinth returned a file result we didn't ask for, skipping", match)
+            continue
+        }
+        delete mod.download.mode
+        mod.download.url = match.files[0].url
+        let side: Side = "both"
+        if (project.client_side === "unsupported") side = "server"
+        if (project.server_side === "unsupported") side = "client"
+        mod.side = side
+        if (!mod.update) mod.update = {}
+        mod.update.modrinth = {
+            "version": match.id,
+            "mod-id": match.project_id
+        }
+        result.set(file_url, mod)
+    }
+    console.log(`found ${result.size} matching files`)
     return result
 }
