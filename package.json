@@ -6,8 +6,8 @@
     "@types/web": "^0.0.294",
     "bun": "^1.3.3",
     "deno": "^2.5.6",
-    "typescript": "^5.9.3",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "test": "node scripts/test.ts",
@@ -17,6 +17,6 @@
   "dependencies": {
     "confbox": "^0.2.2",
     "murmur2": "^1.0.2",
-    "workerless": "file:../workerless/workerless-0.1.0.tgz"
+    "workerless": "https://github.com/sugoidogo/workerless/releases/download/0.1.0/workerless.tgz"
   }
 }
