@@ -4,3 +4,4 @@ test
 packwiz-util*
 dist
 .env
+*.tgz

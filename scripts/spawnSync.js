@@ -1,6 +1,6 @@
-import { type SpawnSyncOptions, spawnSync as nodeSpawnSync } from 'node:child_process'
+import { spawnSync as nodeSpawnSync } from 'node:child_process'
 
-export default function spawnSync(command: string, args?: readonly string[], options: SpawnSyncOptions = {}) {
+export default function spawnSync(command, args, options = {}) {
     if (!options.stdio) options.stdio = 'inherit' // I wanna know what's going on
     if (!options.shell) options.shell = true // Windows requires this for PATHEXT support
     const result = nodeSpawnSync(command, args, options)
