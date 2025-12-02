@@ -18,6 +18,10 @@
   "type": "module",
   "main": "dist/packwiz.js",
   "types": "./dist/packwiz.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "test": "node scripts/test.ts",
     "prepack": "tsc"
