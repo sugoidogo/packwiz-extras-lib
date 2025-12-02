@@ -1,6 +1,6 @@
 {
   "name": "packwiz-extras-lib",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "ts/js library for node and web for working with packwiz modpacks",
   "keywords": [
     "minecraft"

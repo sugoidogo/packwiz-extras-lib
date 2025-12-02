@@ -443,7 +443,7 @@ export async function cfDetect(pack_url: string, cfApiKey: string, size_min=4096
     return result
 }
 
-export async function mrDetect(pack_url: string, size_min=4096): Promise<Map<Path, Mod>> {
+export async function mrDetect(pack_url: string, mrApiKey?: string, size_min = 4096): Promise<Map<Path, Mod>> {
     console.log('loading pack')
     const pack = await fetch_toml(pack_url) as Pack
     const pack_dir = dirname(pack_url)
@@ -470,7 +470,8 @@ export async function mrDetect(pack_url: string, size_min=4096): Promise<Map<Pat
         method: 'POST',
         headers: {
             'content-type': 'application/json',
-            'accept': 'application/json'
+            'accept': 'application/json',
+            'authorization': mrApiKey
         },
         body: JSON.stringify({
             "algorithm": "sha1",
@@ -566,7 +567,7 @@ export async function cfUrl(pack_url: string, cfApiKey: string): Promise<Map<Pat
     return result
 }
 
-export async function mrMerge(pack_url: string): Promise<Map<Path, Mod>> {
+export async function mrMerge(pack_url: string, mrApiKey?: string): Promise<Map<Path, Mod>> {
     console.log('loading pack')
     const pack = await fetch_toml(pack_url) as Pack
     const pack_dir = dirname(pack_url)
@@ -595,7 +596,8 @@ export async function mrMerge(pack_url: string): Promise<Map<Path, Mod>> {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
-                'accept': 'application/json'
+                'accept': 'application/json',
+                'authorization': mrApiKey
             },
             body: JSON.stringify({
                 "algorithm": hash_format,
