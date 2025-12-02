@@ -346,9 +346,7 @@ async function fetch_ok(url: string, options?: RequestInit) {
     try {
         new URL(url)
     } catch {
-        const fs = await import('node:fs/promises')
-        const body = await fs.readFile(url)
-        return new Response(body)
+        url = new URL(url, import.meta.url).href
     }
     const response = await fetch(url, options)
     if (!response.ok) {
