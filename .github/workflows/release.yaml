@@ -32,4 +32,4 @@ jobs:
         with:
           make_latest: true
           body_path: changelog.txt
-          files: workerless.tgz
+          files: packwiz-extras-lib.tgz
