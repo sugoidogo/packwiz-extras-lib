@@ -33,4 +33,3 @@ jobs:
           make_latest: true
           body_path: changelog.txt
           files: workerless.tgz
-          overwrite_files: false
