@@ -1,6 +1,32 @@
 {
-  "name": "packwiz",
-  "main": "scripts/nwtest.js",
+  "name": "packwiz-extras-lib",
+  "version": "2.0.0",
+  "description": "ts/js library for node and web for working with packwiz modpacks",
+  "keywords": [
+    "minecraft"
+  ],
+  "homepage": "https://github.com/sugoidogo/packwiz-extras-lib#readme",
+  "bugs": {
+    "url": "https://github.com/sugoidogo/packwiz-extras-lib/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sugoidogo/packwiz-extras-lib.git"
+  },
+  "license": "LGPL-3.0-or-later",
+  "author": "SugoiDogo",
+  "type": "module",
+  "main": "dist/packwiz.js",
+  "types": "./dist/packwiz.d.ts",
+  "scripts": {
+    "test": "node scripts/test.ts",
+    "prepack": "tsc"
+  },
+  "dependencies": {
+    "confbox": "^0.2.2",
+    "murmur2": "^1.0.2",
+    "workerless": "https://github.com/sugoidogo/workerless/releases/download/0.1.0/workerless.tgz"
+  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/web": "^0.0.294",
@@ -8,15 +34,5 @@
     "deno": "^2.5.6",
     "dotenv": "^17.2.3",
     "typescript": "^5.9.3"
-  },
-  "scripts": {
-    "test": "node scripts/test.ts",
-    "prepack": "tsc"
-  },
-  "type": "module",
-  "dependencies": {
-    "confbox": "^0.2.2",
-    "murmur2": "^1.0.2",
-    "workerless": "https://github.com/sugoidogo/workerless/releases/download/0.1.0/workerless.tgz"
   }
 }
