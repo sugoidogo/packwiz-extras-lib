@@ -23,6 +23,7 @@
     "src"
   ],
   "scripts": {
+    "pretest": "npm run prepack",
     "test": "node scripts/test.ts",
     "prepack": "tsc"
   },
