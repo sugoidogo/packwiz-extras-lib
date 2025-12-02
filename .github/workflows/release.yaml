@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - "*.*.*"
+      - "*"
   workflow_dispatch:
 
 permissions:
@@ -21,16 +21,15 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: latest
-      - name: Prepare
-        run: npm install
       - name: Build
-        run: npm run compile
-      - name: Generate release notes
+        run: npm install
+        run: npm pack
+        run: mv packwiz-extras-lib*.tgz packwiz-extras-lib.tgz
         run: git log $(git describe --tags --abbrev=0 HEAD~1)..HEAD --oneline > changelog.txt
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           make_latest: true
           body_path: changelog.txt
-          files: bin/bun/*
+          files: workerless.tgz
           overwrite_files: false
